@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101722">
+<title>Travel Encounter Planner</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#0b111a; --panel:#121b28; --panel2:#172334; --text:#edf3f8;
+    --muted:#9eacbb; --accent:#7dd3fc; --accent2:#a7f3d0; --border:#2a394c;
+    --danger:#fca5a5;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; background:
+      radial-gradient(circle at top, #18273a 0, var(--bg) 42rem);
+    color:var(--text); font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  main { width:min(980px,100%); margin:auto; padding:18px 14px 40px; }
+  header { margin-bottom:16px; }
+  h1 { font-size:clamp(22px,6vw,32px); line-height:1.1; margin:0 0 5px; }
+  .subtitle { color:var(--muted); margin:0; }
+  .panel {
+    background:color-mix(in srgb,var(--panel) 94%,transparent);
+    border:1px solid var(--border); border-radius:16px; padding:14px;
+    box-shadow:0 12px 35px #0005;
+  }
+  .controls { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+  label { display:block; color:var(--muted); font-size:12px; font-weight:700; margin:0 0 5px; text-transform:uppercase; letter-spacing:.06em; }
+  select,button {
+    width:100%; min-height:48px; border-radius:11px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--text); padding:10px 12px; font:inherit;
+  }
+  select:focus,button:focus { outline:2px solid var(--accent); outline-offset:2px; }
+  button { cursor:pointer; font-weight:750; background:#1e3a52; border-color:#315a76; }
+  button:active { transform:translateY(1px); }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:12px; }
+  .stat { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:11px; }
+  .stat .k { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:20px; font-weight:800; margin-top:2px; }
+  .results { margin-top:14px; display:grid; gap:12px; }
+  .route { overflow:hidden; }
+  .route-head { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:10px; }
+  .route-title { font-weight:800; }
+  .route-distance { color:var(--accent); font-weight:800; white-space:nowrap; }
+  .timeline { display:grid; gap:7px; }
+  .stop {
+    display:grid; grid-template-columns:30px 1fr; gap:10px; position:relative;
+  }
+  .stop:not(:last-child)::after {
+    content:""; position:absolute; left:14px; top:30px; bottom:-7px; width:2px; background:var(--border);
+  }
+  .dot {
+    width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+    background:#203348; border:1px solid #3d5973; color:var(--accent); font-size:12px; z-index:1;
+  }
+  .stop-card { background:var(--panel2); border:1px solid var(--border); border-radius:11px; padding:8px 10px; min-width:0; }
+  .stop-name { font-weight:750; overflow-wrap:anywhere; }
+  .stop-miles { color:var(--muted); font-size:12px; }
+  .events { margin-top:10px; display:grid; gap:7px; }
+  .event {
+    border:1px solid var(--border); border-radius:11px; padding:9px 10px;
+    background:#101a27;
+  }
+  .event.encounter { border-color:#435b4e; background:#13221e; }
+  .event.vending { border-color:#4b5871; }
+  .event.heal { border-color:#684e4e; }
+  .event-type { font-weight:800; margin-bottom:4px; }
+  .event-detail { color:#cbd5df; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .legend { color:var(--muted); font-size:12px; margin-top:10px; }
+  .empty { color:var(--muted); text-align:center; padding:28px 8px; }
+  @media (max-width:650px) {
+    main { padding:14px 10px 28px; }
+    .controls { grid-template-columns:1fr 1fr; }
+    .controls button { grid-column:1 / -1; }
+    .stats { grid-template-columns:1fr 1fr 1fr; }
+    .stat { padding:9px 7px; }
+    .stat .v { font-size:17px; }
+  }
+  @media (min-width:651px) {
+    .results { grid-template-columns:1fr 1fr; align-items:start; }
+    .route { grid-column:1 / -1; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Travel Encounter Planner</h1>
+    <p class="subtitle">Choose two locations to calculate the shortest route and generate its encounters.</p>
+  </header>
+
+  <section class="panel">
+    <div class="controls">
+      <div>
+        <label for="from">From</label>
+        <select id="from"></select>
+      </div>
+      <div>
+        <label for="to">To</label>
+        <select id="to"></select>
+      </div>
+      <button id="go" type="button">Generate route</button>
+    </div>
+    <div id="stats" class="stats" hidden></div>
+  </section>
+
+  <section id="results" class="results"></section>
+</main>
+
+<script>
+"use strict";
+
+const nodes = {
+  mount_arbora:[684,274], land_of_hot_water:[1223,271],
+  gift_of_shuritashi:[274,719], gale_fields:[689,911],
+  coastal_highlands:[1147,1253], brackwater_wetlands:[1369,669],
+  shallows:[93,1122], mountain_approach:[656,541]
+};
+
+const displayNames = {
+  mount_arbora:"Mount Arbora", land_of_hot_water:"Land of Hot Water",
+  gift_of_shuritashi:"Gift of Shuritashi", gale_fields:"Gale Fields",
+  coastal_highlands:"Coastal Highlands", brackwater_wetlands:"Brackwater Wetlands",
+  shallows:"Shallows", mountain_approach:"Mountain Approach"
+};
+
+const edges = [
+  ["shallows","gift_of_shuritashi"],["shallows","gale_fields"],
+  ["gift_of_shuritashi","gale_fields"],["gift_of_shuritashi","mountain_approach"],
+  ["gale_fields","mountain_approach"],["gale_fields","brackwater_wetlands"],
+  ["gale_fields","coastal_highlands"],["mountain_approach","mount_arbora"],
+  ["mountain_approach","brackwater_wetlands"],["coastal_highlands","brackwater_wetlands"],
+  ["coastal_highlands","land_of_hot_water"],["brackwater_wetlands","land_of_hot_water"]
+];
+
+const edgeEnvironments = {
+  "shallows|gift_of_shuritashi":["Coastal","Grasslands"],
+  "shallows|gale_fields":["Grasslands"],
+  "gift_of_shuritashi|gale_fields":["Grasslands","Forest","Coastal"],
+  "gift_of_shuritashi|mountain_approach":["Mountain","Grasslands","Forest"],
+  "gale_fields|mountain_approach":["Grasslands"],
+  "gale_fields|brackwater_wetlands":["Forest","Swamp","Grasslands"],
+  "gale_fields|coastal_highlands":["Forest","Grasslands","Coastal"],
+  "mountain_approach|mount_arbora":["Mountain"],
+  "mountain_approach|brackwater_wetlands":["Swamp","Forest"],
+  "coastal_highlands|brackwater_wetlands":["Coastal","Swamp","Forest"],
+  "coastal_highlands|land_of_hot_water":["Coastal","Swamp","Forest"],
+  "brackwater_wetlands|land_of_hot_water":["Swamp","Forest"]
+};
+
+const nodeIngredients = {
+  mount_arbora:["Black Cinnamon","Bottle Cap","Dawn Petal","Essence of Glumbug","Forge Slag","Gargoyle Powder","Mountain Snail","Noodle Eel","Opu Opu Spring Water","Petrified Alligator","Spark Plug","Spring","Vinyl Record","Wolfenite","Hand of Eryo","Irimbi Chrysalis","Sage carol’s beetle","Amber","Blue Back Salmon","Boom Beri","Bora Bug","Bundle of Driko Twigs","Clay Snake Tail","Earwax","Fish Head","Hakuma Sapwood","Howler Fur","Mandrake Root","Nobblewort","Oporion Glass","Peeping Willow","Poison","Queen's Dilemma","Raka Paste","Spirit Root","Windbloom","Yugi Sap","Yuma Shrub"],
+  land_of_hot_water:["Bottle Cap","Crackling Jasper","Gargoyle Powder","Kojobi Fruit","Molted Lizard Skin","Noodle Eel","Petrified Alligator","Spark Plug","Spirit Tea","Spring","Vinyl Record","Yellow Slime","Fairy willow","Saint Koi Fish scale","Ronin neko Figurine","Bashu Powder","Blue Back Salmon","Boom Beri","Brush Reed","Bundle of Driko Twigs","Chicken Egg","Clay Snake Tail","Earwax","Fish Folk Tooth","Fish Head","Flash Paper","Gohaku Rice","Jumping Bonfire","Oporion Glass","Origami Crane","Pink Candle Wax","Poison","Raka Paste","Sea Water","Seashell","Varrow","Windbloom","AMber","Bamboo"],
+  gift_of_shuritashi:["Bottle Cap","Dawn Petal","Fizzing Green","Happy Joy Cake","Kojobi Fruit","Laughing Moss","Munchanka Root","Nakudama Spice","Noodle Eel","Petrified Alligator","Shadowroot","Spark Plug","Spring","Toka Truffle","Vinyl Record","Wychwood","Octopus Ink","Spirit coal","Plumage of a Running Kirio","Apper Carrot","Bamboo","Bashu Powder","Blue Back Salmon","Boom Beri","Bora Bug","Bundle of Driko Twigs","Camp Mite","Chicken Egg","Cloud Horn","Creeping Bolete","Earwax","Fish Folk Tooth","Fish Head","Flash Paper","Green Slime","Hakuma Sapwood","Jumping Bonfire","Jack-o'-Lantern Bits","Knobble Leaf Seaweed","Lovers Vine","Mellowort","Narutomaki","Nobblewort","Pink Candle Wax","Queen's Dilemma","Scalefruit Rind","Sea Water","Seashell","Spindle-Leg Spider Webs","Varrow","Yugi Sap","Blue Back Salmon","Brush Reed","Fish Folk Tooth","Fish Head","Knobble Leaf Seaweed","Oporion Glass","Pungent Sea Foam"],
+  gale_fields:["Bottle Cap","Dragon Root","Feather Rock","Glow Worms of the Vale","Kojobi Fruit","Living Spud","Noodle Eel","Petrified Alligator","Spark Plug","Spring","Sun Shroom","Vinyl Record","Wolfenite","Dragon Fang of Yutro","Bubble Gum","Orange Slime","Apper Carrot","Blue Back Salmon","Bora Bug","Bundle of Driko Twigs","Camp Mite","Chicken Egg","Clay Snake Tail","Cloud Horn","Earwax","Fish Head","Green Slime","Hakuma Sapwood","Hill Dragon Egg","Howler Fur","Itchi Beri","Jumping Bonfire","Jack-o'-Lantern Bits","Monkey's Coil","Nobblewort","Poison","Pyramid Melon","Rattle Shoot","Sheep Dragon Wool","Spindle-Leg Spider Webs","Ube","Windbloom","Witch's Broom","Yugi Sap"],
+  coastal_highlands:["Bottle Cap","Essence of Glumbug","Kojobi Fruit","Lion's Blume","Nakudama Spice","Noodle Eel","Petrified Alligator","Spark Plug","Spring","Vinyl Record","Blossom of Spirit vine","Bottled Lightning","Ota lantern oil","Wufu Whiskey","Blue Back Salmon","Boom Beri","Bora Bug","Bundle of Driko Twigs","Chicken Egg","Creeping Bolete","Earwax","Fish Head","Flash Paper","Green Slime","Jumping Bonfire","Jack-o'- Lantern Bits","Kojo Root","Mountain Ox Dung","Mouse Tree","Pink Candle Wax","Poison","Sheep Dragon Wool","Snap Vine Sap","Spindle-Leg Spider Webs","Venus Fly Rat","Yuma Shrub","Rust Crab","Sea Water","Seashell","Squid Ink","Tangle Weed","Witch's Eye Coral"],
+  brackwater_wetlands:["Bottle Cap","Corrupted Seawater","Corrupted Slime","Hakumon's Ramen Broth","Laughing Moss","Mournshade","Night Thistle","Noodle Eel","Petrified Alligator","Scumweed","Shadowroot","Spark Plug","Spring","Vinyl Record","Wolfenite","Golden Root","Lionfish Poison","Nokumai’s Frozen Breath","Starstone","Tears of the moon","Bamboo","Blue Back Salmon","Bora Bug","Brush Reed","Bundle of Driko Twigs","Camp Mite","Chicken Egg","Clay Snake Tail","Creeping Bolete","Earwax","Fish Folk Tooth","Fish Head","Green Slime","Gohaku Rice","Howler Fur","Kloth Leech","Knobble Leaf Seaweed","Lovers Vine","Mellowort","Narutomaki","Poison","Queen's Dilemma","Raka Paste","Ribbon Rot","Scalefruit Rind","Sea Water","Seashell","Varrow"],
+  shallows:[], mountain_approach:[]
+};
+
+const potionsAndEquipment = [
+  "Rabbits Speed","Weapon Master Elixir","Spirit of Salyri","Beast Hide","Spirit Armor","Displacement Field",
+  "Shepherd’s bane","Bottled Bomb","Wonder juice","Candlecap","Eagle Vision","Paranoia","Bottle Torch",
+  "Static shock","Incoming","Lightning Breath","Heroism","Slugskin","THunderbelch","Seeking smoke",
+  "Dancing Juice","Prickleskin","Tiny Bubbles","Claws of the crab king","Rubberskin","Keening voice",
+  "Kinetic Pop","Healing Gas","Cinderskin","Iron Mind","Gargoyle Hooch","Elixir of Jipampa","Catspeed",
+  "Durability","Fire shield","Tunnel Vision","Ratatam’s Glowskin Elixir","Don’t Hit me Juice","Invulnerability",
+  "Bottled Bind","Respiratory Distress","Pumpkin Patch Guard","Sheep Dragon Brew","Enhanced static shock",
+  "Enhance lightning Breath","Enhanced Bottle Bomb","Wrathful Spirit","Rapid Withdrawal","Life-steal","Demonskin",
+  "Withered will","Astounding vigor","Many Hands","Epic Bottle Bomb","Essence of Great Rivers",
+  "Carla cackle tooth’s Corruption Cocktail","Hunter speed","Hero blade","Severed Reaction","Dragon frog Transmutation"
+];
+
+const monsters = [
+  ["Powerful Animated Object","Any"],["Aquatic Beast Sprits","Any"],["Powerful Aquatic Beast Spirts","Any"],
+  ["Beast Spirts","Any"],["Powerful Beast Spirts","Any"],["Flying Beast Spirit","Any"],
+  ["Powerful Flying Beast Spirit","Any"],["Elemental Spirit","Any"],["Powerful Elemental Spirit","Any"],
+  ["Spectral Spirits","Any"],["Power Spectral Spirit","Any"],["Flora Spirits","Any"],
+  ["Powerful Flora Spirits","Any"],["Acorn Crab","Forest"],["Akaobata","Any"],["Bearracuda","Mountain"],
+  ["Cat of Prodigious","Forest,Grassland"],["Clone of Valentina","Any"],["Corrupted Bernard","Coastal,Swamp"],
+  ["Crawler","Forest, Swamp"],["Cuddle Bug","Forest,Swamp"],["Deep Angler","Coastal"],["Demon","Any"],
+  ["Dragon","Any"],["Dragon Poodle","Any"],["Elder Dragon Frog","Any"],["Dustbunny","Grassland"],
+  ["Field Giant","Grassland"],["Fish Folk","Coastal"],["Giant Blueberry Jelly Fish","Any"],["Giant Koi","Any"],
+  ["Goro Goro","Forest"],["Hammer Gull","Coastal,Mountain"],["Hill Dragon","Grasslands"],["Howlers","Forest,Grasslands"],
+  ["Howler Yipper","Forest,Grasslands"],["Howler Snarlers","Forest,Grasslands"],["Howler Stalkers","Forest,Grasslands"],
+  ["The Hunter","Any"],["Kafuka","Forest,Swamp"],["Lion Blume","Forest,Grassland,Mountain"],
+  ["Mosslings","Forest,Grassland,Mountain"],["Pixies","Forest,Grassland,Mountain"],["Postal Knight","Any"],
+  ["Rubble Golem","Any"],["Seaweed Elemental","Coastal"],["Sheep Dragon","Grassland"],["Skeletal Fish","Coastal,Swamp"],
+  ["SHY KING","Any"],["THE SKY SALAMANDER","Any"],["SLAGGER","Any"],["Slimes","Any"],
+  ["Green Slimes","Forest,Mountain,Swamp"],["Yellow Slimes","Forest,Mountain,Swamp"],
+  ["Orange Slimes","Forest,Mountain,Swamp"],["Corrupted Slime","Forest,Mountain,Swamp"],["Soda Slime","ANY"],
+  ["Bongkia Spirit","ANY"],["Animalistic Spirt","ANY"],["Pest Spirt","ANY"],["SnowBall Spirts","Mountains"],
+  ["STONE WHALE","Any"],["Stul","Forest"],["Urugama","Forest"],["Vespoma","Coastland,Forest,Swamp"],
+  ["Vile Corruption","Coastland,Forest,Swamp"],["Wandering Door","ANY"],["Yokario","Any"]
+];
+
+const monsterEnvs = Object.fromEntries(monsters.map(([name,envs]) => [name, envs.split(",")]));
+const envMonsters = {};
+for (const [name, envs0] of monsters) {
+  const envs = envs0.toLowerCase() === "any"
+    ? ["Coastal","Forest","Swamp","Mountains","Grasslands"] : envs0.split(",");
+  for (const e of envs) (envMonsters[e] ??= []).push(name);
+}
+
+const POINTS_PER_MILE = 88.89799472710779;
+const MILES_PER_ENCOUNTER = 3;
+
+const key = (u,v) => `${u}|${v}`;
+const undirectedEdgeKey = (u,v) => {
+  const a = [u,v].sort(); return `${a[0]}|${a[1]}`;
+};
+const randomChoice = a => a[Math.floor(Math.random()*a.length)];
+const sample = (a,n) => Array.from({length:n}, () => randomChoice(a));
+
+/*
+ * Equivalent to the Python apsp() implementation, with a next-node
+ * matrix so that answer_query can reconstruct the actual shortest path.
+ */
+function apsp(nodes, rawEdges) {
+  const names = Object.keys(nodes);
+  const dist = Object.fromEntries(names.map(u => [u, Object.fromEntries(names.map(v => [v, Infinity]))]));
+  const nextNode = Object.fromEntries(names.map(u => [u, Object.fromEntries(names.map(v => [v, null]))]));
+
+  for (const n of names) { dist[n][n]=0; nextNode[n][n]=n; }
+
+  for (const [u,v,d] of rawEdges) {
+    if (d < dist[u][v]) {
+      dist[u][v]=d; dist[v][u]=d;
+      nextNode[u][v]=v; nextNode[v][u]=u;
+    }
+  }
+
+  for (const w of names)
+    for (const u of names)
+      for (const v of names) {
+        const nd=dist[u][w]+dist[w][v];
+        if (nd < dist[u][v]) {
+          dist[u][v]=nd;
+          nextNode[u][v]=nextNode[u][w];
+        }
+      }
+
+  function path(u,v) {
+    if (nextNode[u][v] === null) return null;
+    const result=[[u,0]];
+    while (u !== v) {
+      const x=nextNode[u][v];
+      const d=dist[u][x];
+      u=x; result.push([u,d]);
+    }
+    return result;
+  }
+  return {dist,path};
+}
+
+// Calculate edge weights from coordinates, including the doubled mountain edge.
+const weightedEdges = edges.map(([u,v]) => {
+  const [ux,uy]=nodes[u], [vx,vy]=nodes[v];
+  let d=Math.hypot(ux-vx,uy-vy);
+  if ((u==="mountain_approach" && v==="mount_arbora") ||
+      (u==="mount_arbora" && v==="mountain_approach")) d*=2;
+  return [u,v,d];
+});
+
+const {dist,path} = apsp(nodes, weightedEdges);
+
+function queryDistance(u,v) {
+  return Math.round(dist[u][v] / POINTS_PER_MILE);
+}
+
+function queryEncounters(u,v) {
+  const encounterCount = Math.floor(queryDistance(u,v) / MILES_PER_ENCOUNTER);
+  const encounterLocations=[];
+  const uvPath=path(u,v);
+  let traveled=0, p=u;
+
+  for (const [x,d] of uvPath) {
+    traveled += d / POINTS_PER_MILE;
+    const segmentEncounters=Math.floor(traveled / MILES_PER_ENCOUNTER);
+    traveled %= MILES_PER_ENCOUNTER;
+    for (let i=0;i<segmentEncounters;i++) encounterLocations.push([p,x]);
+    p=x;
+  }
+  return [encounterCount, encounterLocations];
+}
+
+function monsterForEnv(env) {
+  // Normalize the environment spellings used inconsistently in the source data.
+  if (!env) return "Unknown";
+  const normalized = {
+    "Grassland": "Grasslands",
+    "Coastland": "Coastal",
+    "ANY": "Coastal"
+  }[env] || env;
+
+  const list = envMonsters[normalized] || envMonsters[env] || [];
+  return list.length ? randomChoice(list) : "Unknown";
+}
+
+function ingredientsForEdge(u,v) {
+  return Array.from({length:10}, () => randomChoice([...nodeIngredients[u],...nodeIngredients[v]]));
+}
+
+function chooseEquipmentPotions() {
+  return sample(potionsAndEquipment,8);
+}
+
+function eventsForPath(u,v) {
+  const [encounterCount, encounterLocations]=queryEncounters(u,v);
+  const encounterEnvs=encounterLocations.map(edge => {
+    const [a,b] = edge;
+    const envs = edgeEnvironments[key(a,b)] ||
+                 edgeEnvironments[key(b,a)] ||
+                 edgeEnvironments[undirectedEdgeKey(a,b)] || [];
+    return envs.length ? randomChoice(envs) : null;
+  });
+
+  const events=[];
+  for (let i=0;i<encounterLocations.length;i++) {
+    const env=encounterEnvs[i];
+    const roll=Math.random()*6; // weights 1,2,3
+    if (roll < 1) {
+      events.push({type:"heal",title:"Heal",detail:"50%"});
+    } else if (roll < 3) {
+      events.push({
+        type:"vending", title:"Vending Machine",
+        detail:"Equipment and Potions: " + chooseEquipmentPotions().join(", ") +
+               "\nIngredients: " + ingredientsForEdge(u,v).join(", ")
+      });
+    } else {
+      events.push({type:"encounter",title:"Encounter",detail:`${env}: ${monsterForEnv(env)}`});
+    }
+  }
+  return events;
+}
+
+function answer_query(u,v) {
+  const uvPath=path(u,v).map(([x,d]) => [x,d/POINTS_PER_MILE]);
+  for (let i=1;i<uvPath.length;i++) uvPath[i][1]+=uvPath[i-1][1];
+  return [uvPath,eventsForPath(u,v)];
+}
+
+function pretty(s) {
+  return displayNames[s] || s.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+const from=document.querySelector("#from"), to=document.querySelector("#to");
+for (const n of Object.keys(nodes)) {
+  from.add(new Option(pretty(n),n));
+  to.add(new Option(pretty(n),n));
+}
+to.value="land_of_hot_water";
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function render() {
+  const u=from.value, v=to.value;
+  const [route,events]=answer_query(u,v);
+  const distance=queryDistance(u,v);
+  const encounterCount=queryEncounters(u,v)[0];
+
+  const stats=document.querySelector("#stats");
+  stats.hidden=false;
+  stats.innerHTML=`
+    <div class="stat"><div class="k">Distance</div><div class="v">${distance} mi</div></div>
+    <div class="stat"><div class="k">Encounters</div><div class="v">${encounterCount}</div></div>
+    <div class="stat"><div class="k">Nodes</div><div class="v">${route.length}</div></div>`;
+
+  let html=`<section class="panel route">
+    <div class="route-head">
+      <div class="route-title">${escapeHtml(pretty(u))} → ${escapeHtml(pretty(v))}</div>
+      <div class="route-distance">${distance} mi</div>
+    </div>
+    <div class="timeline">`;
+
+  route.forEach(([node,miles],i) => {
+    html+=`<div class="stop">
+      <div class="dot">${i+1}</div>
+      <div class="stop-card">
+        <div class="stop-name">${escapeHtml(pretty(node))}</div>
+        <div class="stop-miles">${miles.toFixed(1)} mi from origin</div>
+      </div>
+    </div>`;
+  });
+  html+=`</div><div class="legend">${events.length} generated event${events.length===1?"":"s"} along the route.</div></section>`;
+
+  html+=`<section class="panel"><div class="route-title">Events</div><div class="events">`;
+  if (!events.length) {
+    html+=`<div class="empty">No encounters on this route.</div>`;
+  } else {
+    events.forEach((e,i)=>{
+      html+=`<article class="event ${e.type}">
+        <div class="event-type">${i+1}. ${escapeHtml(e.title)}</div>
+        <div class="event-detail">${escapeHtml(e.detail)}</div>
+      </article>`;
+    });
+  }
+  html+=`</div></section>`;
+  document.querySelector("#results").innerHTML=html;
+}
+
+document.querySelector("#go").addEventListener("click",render);
+from.addEventListener("change",render);
+to.addEventListener("change",render);
+render();
+</script>
+</body>
+</html>
