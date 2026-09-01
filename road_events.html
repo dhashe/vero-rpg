@@ -161,17 +161,21 @@ const nodeIngredients = {
   shallows:[], mountain_approach:[]
 };
 
-const potionsAndEquipment = [
-  "Rabbits Speed","Weapon Master Elixir","Spirit of Salyri","Beast Hide","Spirit Armor","Displacement Field",
-  "Shepherd’s bane","Bottled Bomb","Wonder juice","Candlecap","Eagle Vision","Paranoia","Bottle Torch",
-  "Static shock","Incoming","Lightning Breath","Heroism","Slugskin","THunderbelch","Seeking smoke",
-  "Dancing Juice","Prickleskin","Tiny Bubbles","Claws of the crab king","Rubberskin","Keening voice",
-  "Kinetic Pop","Healing Gas","Cinderskin","Iron Mind","Gargoyle Hooch","Elixir of Jipampa","Catspeed",
-  "Durability","Fire shield","Tunnel Vision","Ratatam’s Glowskin Elixir","Don’t Hit me Juice","Invulnerability",
-  "Bottled Bind","Respiratory Distress","Pumpkin Patch Guard","Sheep Dragon Brew","Enhanced static shock",
-  "Enhance lightning Breath","Enhanced Bottle Bomb","Wrathful Spirit","Rapid Withdrawal","Life-steal","Demonskin",
-  "Withered will","Astounding vigor","Many Hands","Epic Bottle Bomb","Essence of Great Rivers",
-  "Carla cackle tooth’s Corruption Cocktail","Hunter speed","Hero blade","Severed Reaction","Dragon frog Transmutation"
+const potions = [
+    "Rabbits Speed", "Spirit of Salyri", "Displacement Field", "Shepherd’s bane", "Bottled Bomb", "Wonder juice",
+    "Candlecap", "Eagle Vision", "Paranoia", "Static shock", "Incoming", "Lightning Breath", "Heroism", "Slugskin",
+    "Thunderbelch", "Seeking smoke", "Dancing Juice", "Tiny Bubbles", "Keening voice", "Kinetic Pop",
+    "Healing Gas", "Gargoyle Hooch", "Elixir of Jipampa", "Catspeed", "Durability", "Tunnel Vision",
+    "Ratatam’s Glowskin Elixir", "Don’t Hit me Juice", "Invulnerability", "Bottled Bind", "Respiratory Distress",
+    "Sheep Dragon Brew", "Enhanced static shock", "Enhance lightning Breath", "Enhanced Bottle Bomb", 
+    "Wrathful Spirit", "Rapid Withdrawal", "Life-steal", "Withered will", "Astounding vigor", "Many Hands",
+    "Epic Bottle Bomb", "Bottle Torch", "Essence of Great Rivers", "Carla cackle tooth’s Corruption Cocktail",
+    "Hunter speed", "Severed Reaction", "Dragon frog Transmutation",
+];
+
+const equipment = [
+    "Weapon Master Elixir", "Beast Hide", "Spirit Armor", "Prickleskin", "Claws of the crab king",
+    "Rubberskin", "Cinderskin", "Iron Mind", "Fire shield", "Pumpkin Patch Guard", "Demonskin", "Hero blade",
 ];
 
 const monsters = [
@@ -304,8 +308,12 @@ function ingredientsForEdge(u,v) {
   return Array.from({length:10}, () => randomChoice([...nodeIngredients[u],...nodeIngredients[v]]));
 }
 
-function chooseEquipmentPotions() {
-  return sample(potionsAndEquipment,8);
+function chooseEquipment() {
+  return sample(equipment,3);
+}
+
+function choosePotions() {
+  return sample(potions,5);
 }
 
 function eventsForPath(u,v) {
@@ -327,7 +335,8 @@ function eventsForPath(u,v) {
     } else if (roll < 3) {
       events.push({
         type:"vending", title:"Vending Machine",
-        detail:"Equipment and Potions: " + chooseEquipmentPotions().join(", ") +
+        detail:"Equipment: " + chooseEquipment().join(", ") +
+               "\nPotions: " + choosePotions().join(", ") +
                "\nIngredients: " + ingredientsForEdge(u,v).join(", ")
       });
     } else {
