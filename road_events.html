@@ -163,16 +163,18 @@ function eventsForPath(u,v) {
   const events=[];
   for (let i=0;i<encounterLocations.length;i++) {
     const env=encounterEnvs[i];
-    const roll=Math.random()*6; // weights 1,2,3
-    if (roll < 1) {
+    const roll=Math.random()*100; // weights 16,33,50,1
+    if (roll < 16) {
       events.push({type:"heal",title:"Heal",detail:"50%"});
-    } else if (roll < 3) {
+    } else if (roll < 49) {
       events.push({
         type:"vending", title:"Vending Machine",
         detail:stockDetail(ingredientsForEdge(u,v))
       });
-    } else {
+    } else if (roll < 99) {
       events.push({type:"encounter",title:"Encounter",detail:`${env}: ${monsterForEnv(env)}`});
+    } else {
+      events.push({type:"teleport",title:"Teleport",detail:"May choose to immediately move to any location"})
     }
   }
   return events;
