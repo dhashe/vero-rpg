@@ -63,12 +63,12 @@ const potions = [
     "Sheep Dragon Brew", "Enhanced static shock", "Enhance lightning Breath", "Enhanced Bottle Bomb",
     "Wrathful Spirit", "Rapid Withdrawal", "Life-steal", "Withered will", "Astounding vigor", "Many Hands",
     "Epic Bottle Bomb", "Bottle Torch", "Essence of Great Rivers", "Carla cackle tooth’s Corruption Cocktail",
-    "Hunter speed", "Severed Reaction", "Dragon frog Transmutation",
+    "Hunter speed", "Severed Reaction", "Dragon frog Transmutation", "Weapon Master Elixir", "Beast Hide",
+    "Spirit Armor", "Prickleskin", "Claws of the crab king", "Rubberskin", "Cinderskin", "Iron Mind",
+    "Fire shield", "Pumpkin Patch Guard", "Demonskin", "Hero blade",
 ];
 
 const equipment = [
-    "Weapon Master Elixir", "Beast Hide", "Spirit Armor", "Prickleskin", "Claws of the crab king",
-    "Rubberskin", "Cinderskin", "Iron Mind", "Fire shield", "Pumpkin Patch Guard", "Demonskin", "Hero blade",
 ];
 
 const monsters = [
