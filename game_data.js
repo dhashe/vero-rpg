@@ -46,7 +46,7 @@ const edgeEnvironments = {
 
 const nodeIngredients = {
   mount_arbora:["Black Cinnamon","Bottle Cap","Dawn Petal","Essence of Glumbug","Forge Slag","Gargoyle Powder","Mountain Snail","Noodle Eel","Opu Opu Spring Water","Petrified Alligator","Spark Plug","Spring","Vinyl Record","Wolfenite","Hand of Eryo","Irimbi Chrysalis","Sage carol’s beetle","Amber","Blue Back Salmon","Boom Beri","Bora Bug","Bundle of Driko Twigs","Clay Snake Tail","Earwax","Fish Head","Hakuma Sapwood","Howler Fur","Mandrake Root","Nobblewort","Oporion Glass","Peeping Willow","Poison","Queen's Dilemma","Raka Paste","Spirit Root","Windbloom","Yugi Sap","Yuma Shrub"],
-  land_of_hot_water:["Bottle Cap","Crackling Jasper","Gargoyle Powder","Kojobi Fruit","Molted Lizard Skin","Noodle Eel","Petrified Alligator","Spark Plug","Spirit Tea","Spring","Vinyl Record","Yellow Slime","Fairy willow","Saint Koi Fish scale","Ronin neko Figurine","Bashu Powder","Blue Back Salmon","Boom Beri","Brush Reed","Bundle of Driko Twigs","Chicken Egg","Clay Snake Tail","Earwax","Fish Folk Tooth","Fish Head","Flash Paper","Gohaku Rice","Jumping Bonfire","Oporion Glass","Origami Crane","Pink Candle Wax","Poison","Raka Paste","Sea Water","Seashell","Varrow","Windbloom","AMber","Bamboo"],
+  land_of_hot_water:["Bottle Cap","Crackling Jasper","Gargoyle Powder","Kojobi Fruit","Molted Lizard Skin","Noodle Eel","Petrified Alligator","Spark Plug","Spirit Tea","Spring","Vinyl Record","Yellow Slime","Fairy willow","Saint Koi Fish scale","Ronin neko Figurine","Bashu Powder","Blue Back Salmon","Boom Beri","Brush Reed","Bundle of Driko Twigs","Chicken Egg","Clay Snake Tail","Earwax","Fish Folk Tooth","Fish Head","Flash Paper","Gohaku Rice","Jumping Bonfire","Oporion Glass","Origami Crane","Pink Candle Wax","Poison","Raka Paste","Sea Water","Seashell","Varrow","Windbloom","Amber","Bamboo"],
   gift_of_shuritashi:["Bottle Cap","Dawn Petal","Fizzing Green","Happy Joy Cake","Kojobi Fruit","Laughing Moss","Munchanka Root","Nakudama Spice","Noodle Eel","Petrified Alligator","Shadowroot","Spark Plug","Spring","Toka Truffle","Vinyl Record","Wychwood","Octopus Ink","Spirit coal","Plumage of a Running Kirio","Apper Carrot","Bamboo","Bashu Powder","Blue Back Salmon","Boom Beri","Bora Bug","Bundle of Driko Twigs","Camp Mite","Chicken Egg","Cloud Horn","Creeping Bolete","Earwax","Fish Folk Tooth","Fish Head","Flash Paper","Green Slime","Hakuma Sapwood","Jumping Bonfire","Jack-o'-Lantern Bits","Knobble Leaf Seaweed","Lovers Vine","Mellowort","Narutomaki","Nobblewort","Pink Candle Wax","Queen's Dilemma","Scalefruit Rind","Sea Water","Seashell","Spindle-Leg Spider Webs","Varrow","Yugi Sap","Blue Back Salmon","Brush Reed","Fish Folk Tooth","Fish Head","Knobble Leaf Seaweed","Oporion Glass","Pungent Sea Foam"],
   gale_fields:["Bottle Cap","Dragon Root","Feather Rock","Glow Worms of the Vale","Kojobi Fruit","Living Spud","Noodle Eel","Petrified Alligator","Spark Plug","Spring","Sun Shroom","Vinyl Record","Wolfenite","Dragon Fang of Yutro","Bubble Gum","Orange Slime","Apper Carrot","Blue Back Salmon","Bora Bug","Bundle of Driko Twigs","Camp Mite","Chicken Egg","Clay Snake Tail","Cloud Horn","Earwax","Fish Head","Green Slime","Hakuma Sapwood","Hill Dragon Egg","Howler Fur","Itchi Beri","Jumping Bonfire","Jack-o'-Lantern Bits","Monkey's Coil","Nobblewort","Poison","Pyramid Melon","Rattle Shoot","Sheep Dragon Wool","Spindle-Leg Spider Webs","Ube","Windbloom","Witch's Broom","Yugi Sap"],
   coastal_highlands:["Bottle Cap","Essence of Glumbug","Kojobi Fruit","Lion's Blume","Nakudama Spice","Noodle Eel","Petrified Alligator","Spark Plug","Spring","Vinyl Record","Blossom of Spirit vine","Bottled Lightning","Ota lantern oil","Wufu Whiskey","Blue Back Salmon","Boom Beri","Bora Bug","Bundle of Driko Twigs","Chicken Egg","Creeping Bolete","Earwax","Fish Head","Flash Paper","Green Slime","Jumping Bonfire","Jack-o'- Lantern Bits","Kojo Root","Mountain Ox Dung","Mouse Tree","Pink Candle Wax","Poison","Sheep Dragon Wool","Snap Vine Sap","Spindle-Leg Spider Webs","Venus Fly Rat","Yuma Shrub","Rust Crab","Sea Water","Seashell","Squid Ink","Tangle Weed","Witch's Eye Coral"],
@@ -69,6 +69,15 @@ const potions = [
 ];
 
 const equipment = [
+    // weapons
+    "Boomerang", "Butterfly Staff", "Fan", "Frying Pan", "Umbrella", "Chef's Knife", "Oyster Shucker",
+    "Fancy Fishbone Remover", "Bench Scraper", "Potato Ricer", "Scimitar", "Bubble Road", "Vertebrae Sword",
+    // clothing
+    "Alpaca Winter Coat", "Yellow Striped Summer Romper", "Beekeeper's Suit", "Hoka Shoes", "Red Bandana",
+    "Star Spangled Banner Thong", "Tie-Dye T-Shirt", "Swimsuit", "Girlscout Vial Vest", "Treat Pouch", "Fedora",
+    // Other
+    "Refrigerator Advanced Sling Bag", "Basic Tent", "Advanced Tent", "Cat Toys", "Dog Toys",
+    "Large Fuzzy Blanket",
 ];
 
 const monsters = [
