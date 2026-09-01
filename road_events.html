@@ -305,15 +305,15 @@ function monsterForEnv(env) {
 }
 
 function ingredientsForEdge(u,v) {
-  return Array.from({length:10}, () => randomChoice([...nodeIngredients[u],...nodeIngredients[v]]));
+  return Array.from({length:3}, () => randomChoice([...nodeIngredients[u],...nodeIngredients[v]]));
 }
 
 function chooseEquipment() {
-  return sample(equipment,3);
+  return sample(equipment,1);
 }
 
 function choosePotions() {
-  return sample(potions,5);
+  return sample(potions,2);
 }
 
 function eventsForPath(u,v) {
