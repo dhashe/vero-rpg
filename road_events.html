@@ -172,7 +172,11 @@ function eventsForPath(u,v) {
         detail:stockDetail(ingredientsForEdge(u,v))
       });
     } else if (roll < 99) {
-      events.push({type:"encounter",title:"Encounter",detail:`${env}: ${monsterForEnv(env)}`});
+      const monsterIngredients=sample(ingredientsForEdge(u,v), 3);
+      events.push({
+        type:"encounter",title:"Encounter",
+        detail:`${env}: ${monsterForEnv(env)}\nPrize: $${randInt(10,50)} and ${monsterIngredients.join(", ")}`
+      });
     } else {
       events.push({type:"teleport",title:"Teleport",detail:"May choose to immediately move to any location"})
     }

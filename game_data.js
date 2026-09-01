@@ -114,6 +114,8 @@ for (const [name, envs0] of monsters) {
 const randomChoice = a => a[Math.floor(Math.random()*a.length)];
 const sample = (a,n) => Array.from({length:n}, () => randomChoice(a));
 
+const randInt = (l,r) => Math.round(Math.random()*(r-l) + l);
+
 function chooseEquipment() {
   return sample(equipment,1);
 }
