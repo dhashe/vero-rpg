@@ -54,6 +54,10 @@ const nodeIngredients = {
   shallows:[], mountain_approach:[]
 };
 
+// Every ingredient in the world, deduplicated. Guild quests may ask for any of
+// these, unlike shops and vending machines which are limited to local stock.
+const allIngredients = [...new Set(Object.values(nodeIngredients).flat())];
+
 const potions = [
     "Rabbits Speed", "Spirit of Salyri", "Displacement Field", "Shepherd’s bane", "Bottled Bomb", "Wonder juice",
     "Candlecap", "Eagle Vision", "Paranoia", "Static shock", "Incoming", "Lightning Breath", "Heroism", "Slugskin",
@@ -114,6 +118,15 @@ for (const [name, envs0] of monsters) {
 const randomChoice = a => a[Math.floor(Math.random()*a.length)];
 const sample = (a,n) => Array.from({length:n}, () => randomChoice(a));
 
+// Like sample(), but never picks the same element twice. Returns fewer than n
+// entries only when the pool itself is smaller than n.
+const sampleDistinct = (a,n) => {
+  const pool=[...a], out=[];
+  while (out.length < n && pool.length)
+    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  return out;
+};
+
 const randInt = (l,r) => Math.round(Math.random()*(r-l) + l);
 
 function chooseEquipment() {
@@ -122,6 +135,11 @@ function chooseEquipment() {
 
 function choosePotions() {
   return sample(potions,2);
+}
+
+// Guild quests are handed out regardless of terrain, so any monster qualifies.
+function randomMonster() {
+  return randomChoice(monsters)[0];
 }
 
 function monsterForEnv(env) {

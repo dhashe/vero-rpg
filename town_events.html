@@ -9,6 +9,7 @@
 <style>
   .controls { grid-template-columns:1fr auto; }
   .event.shop { border-color:#4b5871; }
+  .event.quest { border-color:#6d5a37; background:#1f1a11; }
   @media (max-width:650px) {
     .controls { grid-template-columns:1fr; }
   }
@@ -23,7 +24,7 @@
 
   <header>
     <h1>Town Events</h1>
-    <p class="subtitle">Choose a location to generate the shops currently trading there.</p>
+    <p class="subtitle">Choose a location to generate the shops trading there and the quest the guild is posting.</p>
   </header>
 
   <section class="panel">
@@ -32,7 +33,7 @@
         <label for="location">Location</label>
         <select id="location"></select>
       </div>
-      <button id="go" type="button">Generate shops</button>
+      <button id="go" type="button">Generate town</button>
     </div>
     <div id="stats" class="stats" hidden></div>
   </section>
@@ -45,6 +46,9 @@
 "use strict";
 
 const SHOPS_PER_TOWN = 3;
+const QUESTS_PER_TOWN = 1;
+const QUEST_INGREDIENTS = 2;
+const QUEST_REWARD = [25,50];
 
 // Shops stock only what the node itself offers, unlike road vending machines
 // which pool the ingredients of both endpoints of an edge.
@@ -59,39 +63,61 @@ function shopsForNode(n) {
   }));
 }
 
+// The guild posts board quests from the whole world: the target monster ignores
+// local terrain and the requested ingredients can come from any location.
+function questsForNode() {
+  return Array.from({length:QUESTS_PER_TOWN}, () => ({
+    type:"quest", title:"Guild Monster Quest",
+    detail:"Slay: " + randomMonster() +
+           "\nCollect: " + sampleDistinct(allIngredients,QUEST_INGREDIENTS).join(", ") +
+           "\nReward: $" + randInt(...QUEST_REWARD)
+  }));
+}
+
 const locationSel=document.querySelector("#location");
 populateLocationSelect(locationSel);
 locationSel.value="land_of_hot_water";
 
+function eventCards(events) {
+  return events.map((e,i)=>`<article class="event ${e.type}">
+      <div class="event-type">${i+1}. ${escapeHtml(e.title)}</div>
+      <div class="event-detail">${escapeHtml(e.detail)}</div>
+    </article>`).join("");
+}
+
 function render() {
   const n=locationSel.value;
-  const events=shopsForNode(n);
+  const shops=shopsForNode(n);
+  const quests=questsForNode();
   const poolSize=new Set(nodeIngredients[n] || []).size;
 
   const stats=document.querySelector("#stats");
   stats.hidden=false;
   stats.innerHTML=`
-    <div class="stat"><div class="k">Shops</div><div class="v">${events.length}</div></div>
-    <div class="stat"><div class="k">Local Ingredients</div><div class="v">${poolSize}</div></div>
-    <div class="stat"><div class="k">Items per Shop</div><div class="v">6</div></div>`;
+    <div class="stat"><div class="k">Shops</div><div class="v">${shops.length}</div></div>
+    <div class="stat"><div class="k">Guild Quests</div><div class="v">${quests.length}</div></div>
+    <div class="stat"><div class="k">Local Ingredients</div><div class="v">${poolSize}</div></div>`;
 
-  let html=`<section class="panel full">
+  let html=`<section class="panel">
     <div class="card-head">
       <div class="card-title">${escapeHtml(pretty(n))}</div>
-      <div class="card-note">${events.length} shop${events.length===1?"":"s"}</div>
+      <div class="card-note">${shops.length} shop${shops.length===1?"":"s"}</div>
     </div>
     <div class="events">`;
-
   if (!poolSize) {
     html+=`<div class="empty">No local ingredients are gathered here.</div>`;
   }
-  events.forEach((e,i)=>{
-    html+=`<article class="event ${e.type}">
-      <div class="event-type">${i+1}. ${escapeHtml(e.title)}</div>
-      <div class="event-detail">${escapeHtml(e.detail)}</div>
-    </article>`;
-  });
+  html+=eventCards(shops);
   html+=`</div><div class="legend">Shops stock only ingredients found at ${escapeHtml(pretty(n))}.</div></section>`;
+
+  html+=`<section class="panel">
+    <div class="card-head">
+      <div class="card-title">Guild Board</div>
+      <div class="card-note">${quests.length} quest${quests.length===1?"":"s"}</div>
+    </div>
+    <div class="events">${eventCards(quests)}</div>
+    <div class="legend">Quest targets and ingredients are drawn from anywhere in the world.</div>
+  </section>`;
 
   document.querySelector("#results").innerHTML=html;
 }
