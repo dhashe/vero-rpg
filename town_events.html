@@ -5,78 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101722">
 <title>Town Events</title>
+<link rel="stylesheet" href="style.css">
 <style>
-  :root {
-    color-scheme: dark;
-    --bg:#0b111a; --panel:#121b28; --panel2:#172334; --text:#edf3f8;
-    --muted:#9eacbb; --accent:#7dd3fc; --accent2:#a7f3d0; --border:#2a394c;
-    --danger:#fca5a5;
-  }
-  * { box-sizing:border-box; }
-  body {
-    margin:0; min-height:100vh; background:
-      radial-gradient(circle at top, #18273a 0, var(--bg) 42rem);
-    color:var(--text); font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  }
-  main { width:min(980px,100%); margin:auto; padding:18px 14px 40px; }
-  header { margin-bottom:16px; }
-  h1 { font-size:clamp(22px,6vw,32px); line-height:1.1; margin:0 0 5px; }
-  .subtitle { color:var(--muted); margin:0; }
-  .tabs {
-    display:flex; gap:5px; margin-bottom:14px; padding:4px;
-    background:var(--panel2); border:1px solid var(--border); border-radius:13px;
-  }
-  .tabs a {
-    flex:1; min-height:44px; display:grid; place-items:center; padding:8px 10px;
-    border-radius:9px; text-decoration:none; color:var(--muted); font-weight:750;
-  }
-  .tabs a:hover { color:var(--text); }
-  .tabs a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-  .tabs a[aria-current="page"] {
-    background:#1e3a52; color:var(--text); box-shadow:inset 0 0 0 1px #315a76;
-  }
-  .panel {
-    background:color-mix(in srgb,var(--panel) 94%,transparent);
-    border:1px solid var(--border); border-radius:16px; padding:14px;
-    box-shadow:0 12px 35px #0005;
-  }
-  .controls { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
-  label { display:block; color:var(--muted); font-size:12px; font-weight:700; margin:0 0 5px; text-transform:uppercase; letter-spacing:.06em; }
-  select,button {
-    width:100%; min-height:48px; border-radius:11px; border:1px solid var(--border);
-    background:var(--panel2); color:var(--text); padding:10px 12px; font:inherit;
-  }
-  select:focus,button:focus { outline:2px solid var(--accent); outline-offset:2px; }
-  button { cursor:pointer; font-weight:750; background:#1e3a52; border-color:#315a76; }
-  button:active { transform:translateY(1px); }
-  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:12px; }
-  .stat { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:11px; }
-  .stat .k { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
-  .stat .v { font-size:20px; font-weight:800; margin-top:2px; }
-  .results { margin-top:14px; display:grid; gap:12px; }
-  .town { grid-column:1 / -1; }
-  .town-head { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:10px; }
-  .town-title { font-weight:800; }
-  .town-count { color:var(--accent); font-weight:800; white-space:nowrap; }
-  .events { margin-top:10px; display:grid; gap:7px; }
-  .event {
-    border:1px solid var(--border); border-radius:11px; padding:9px 10px;
-    background:#101a27;
-  }
+  .controls { grid-template-columns:1fr auto; }
   .event.shop { border-color:#4b5871; }
-  .event-type { font-weight:800; margin-bottom:4px; }
-  .event-detail { color:#cbd5df; white-space:pre-wrap; overflow-wrap:anywhere; }
-  .legend { color:var(--muted); font-size:12px; margin-top:10px; }
-  .empty { color:var(--muted); text-align:center; padding:28px 8px; }
   @media (max-width:650px) {
-    main { padding:14px 10px 28px; }
     .controls { grid-template-columns:1fr; }
-    .stats { grid-template-columns:1fr 1fr 1fr; }
-    .stat { padding:9px 7px; }
-    .stat .v { font-size:17px; }
-  }
-  @media (min-width:651px) {
-    .results { grid-template-columns:1fr 1fr; align-items:start; }
   }
 </style>
 </head>
@@ -141,10 +75,10 @@ function render() {
     <div class="stat"><div class="k">Local Ingredients</div><div class="v">${poolSize}</div></div>
     <div class="stat"><div class="k">Items per Shop</div><div class="v">6</div></div>`;
 
-  let html=`<section class="panel town">
-    <div class="town-head">
-      <div class="town-title">${escapeHtml(pretty(n))}</div>
-      <div class="town-count">${events.length} shop${events.length===1?"":"s"}</div>
+  let html=`<section class="panel full">
+    <div class="card-head">
+      <div class="card-title">${escapeHtml(pretty(n))}</div>
+      <div class="card-note">${events.length} shop${events.length===1?"":"s"}</div>
     </div>
     <div class="events">`;
 
