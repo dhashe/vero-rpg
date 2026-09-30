@@ -115,31 +115,37 @@ for (const [name, envs0] of monsters) {
   for (const e of envs) (envMonsters[e] ??= []).push(name);
 }
 
-const randomChoice = a => a[Math.floor(Math.random()*a.length)];
-const sample = (a,n) => Array.from({length:n}, () => randomChoice(a));
+/*
+ * Every drawing helper takes an optional `rnd` in place of Math.random, so the
+ * same code can produce throwaway rolls (road encounters) or the shared,
+ * reproducible stock of a town (see the daily refresh section below).
+ */
+
+const randomChoice = (a,rnd=Math.random) => a[Math.floor(rnd()*a.length)];
+const sample = (a,n,rnd=Math.random) => Array.from({length:n}, () => randomChoice(a,rnd));
 
 // Like sample(), but never picks the same element twice. Returns fewer than n
 // entries only when the pool itself is smaller than n.
-const sampleDistinct = (a,n) => {
+const sampleDistinct = (a,n,rnd=Math.random) => {
   const pool=[...a], out=[];
   while (out.length < n && pool.length)
-    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    out.push(pool.splice(Math.floor(rnd()*pool.length),1)[0]);
   return out;
 };
 
-const randInt = (l,r) => Math.round(Math.random()*(r-l) + l);
+const randInt = (l,r,rnd=Math.random) => Math.round(rnd()*(r-l) + l);
 
-function chooseEquipment() {
-  return sample(equipment,1);
+function chooseEquipment(rnd) {
+  return sample(equipment,1,rnd);
 }
 
-function choosePotions() {
-  return sample(potions,2);
+function choosePotions(rnd) {
+  return sample(potions,2,rnd);
 }
 
 // Guild quests are handed out regardless of terrain, so any monster qualifies.
-function randomMonster() {
-  return randomChoice(monsters)[0];
+function randomMonster(rnd) {
+  return randomChoice(monsters,rnd)[0];
 }
 
 function monsterForEnv(env) {
@@ -163,8 +169,107 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-// Renders the shared "Equipment / Potions / Ingredients" body used by both
-// road vending machines and town shops. Only the ingredient pool differs.
+/*
+ * ---------------------------------------------------------------------------
+ * Daily refresh
+ * ---------------------------------------------------------------------------
+ * Town stock and guild quests are the same for every player, so they are not
+ * rolled per page load. Instead the world is divided into refresh windows of
+ * `period` days, and everything in a window is drawn from a PRNG seeded with
+ * that window's index. A window therefore turns over exactly on the days where
+ * (days since the epoch) % period === 0, and until then every browser session
+ * regenerates identical contents.
+ *
+ * Days are counted in New York local time, so a window rolls over at NYC
+ * midnight rather than at the viewer's own midnight or at UTC midnight.
+ */
+
+const REFRESH_DAYS = { equipment:2, potions:3, ingredients:3, quest:7 };
+
+const NY_DAY_PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone:"America/New_York", year:"numeric", month:"2-digit", day:"2-digit"
+});
+
+// Whole days from 1970-01-01 to `now`'s calendar date in New York.
+function daysSinceEpoch(now=new Date()) {
+  const p={};
+  for (const {type,value} of NY_DAY_PARTS.formatToParts(now))
+    if (type !== "literal") p[type]=Number(value);
+  return Math.floor(Date.UTC(p.year, p.month-1, p.day) / 86400000);
+}
+
+const windowIndex = (period, day=daysSinceEpoch()) => Math.floor(day / period);
+
+// The day the current window's contents are replaced: the next multiple of
+// `period`, which is the next day satisfying day % period === 0.
+const windowExpiryDay = (period, day=daysSinceEpoch()) => (windowIndex(period,day) + 1) * period;
+
+const DAY_LABEL = new Intl.DateTimeFormat("en-US", {
+  timeZone:"UTC", weekday:"short", month:"short", day:"numeric"
+});
+
+// Day numbers are NYC calendar dates, which Date.UTC encoded as UTC midnight,
+// so read them back out in UTC to avoid shifting off by a day.
+const dayLabel = day => DAY_LABEL.format(new Date(day * 86400000));
+
+/*
+ * xmur3 string hash feeding a mulberry32 generator: both are small,
+ * public-domain primitives, and together they turn an arbitrary key into a
+ * stable, well-distributed stream of numbers in [0,1).
+ */
+function seededRandom(...keyParts) {
+  const str=keyParts.join("|");
+  let h=1779033703 ^ str.length;
+  for (let i=0;i<str.length;i++) {
+    h=Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h=(h << 13) | (h >>> 19);
+  }
+  let a=(Math.imul(h ^ (h >>> 16), 2246822507) ^ h) >>> 0;
+  return () => {
+    a=(a + 0x6D2B79F5) | 0;
+    let t=Math.imul(a ^ (a >>> 15), 1 | a);
+    t=(t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// A generator shared by everyone viewing the same thing in the same window.
+// `keyParts` must identify the thing being drawn (what it is, where it is, and
+// which slot) so that separate entries do not all draw the same values.
+const windowRandom = (period, ...keyParts) => seededRandom(period, windowIndex(period), ...keyParts);
+
+// One "Label: values (expires ...)" line of refreshing stock. `draw` receives
+// the window's generator and returns the text for the values.
+function refreshLine(label, period, keyParts, draw) {
+  return `${label}: ${draw(windowRandom(period, ...keyParts))}` +
+         ` (expires ${dayLabel(windowExpiryDay(period))})`;
+}
+
+// Renders the "Equipment / Potions / Ingredients" body of a town shop. Unlike a
+// vending machine's stock, each line refreshes on its own schedule and is
+// identical for every player until then, so it is keyed to the town and to the
+// shop's slot on the page rather than rolled fresh.
+function shopStock(node, slot) {
+  const pool=nodeIngredients[node] || [];
+  return [
+    refreshLine("Equipment", REFRESH_DAYS.equipment, ["equipment",node,slot],
+                rnd => chooseEquipment(rnd).join(", ")),
+    refreshLine("Potions", REFRESH_DAYS.potions, ["potions",node,slot],
+                rnd => choosePotions(rnd).join(", ")),
+    // Shops stock only what the town itself offers, unlike road vending
+    // machines which pool the ingredients of both endpoints of an edge. A town
+    // with no local ingredients has nothing to restock, hence no expiry.
+    pool.length
+      ? refreshLine("Ingredients", REFRESH_DAYS.ingredients, ["ingredients",node,slot],
+                    rnd => sample(pool,3,rnd).join(", "))
+      : "Ingredients: None available here",
+  ].join("\n");
+}
+
+// Renders the "Equipment / Potions / Ingredients" body of a road vending
+// machine. These sit at encounter points whose very existence is re-rolled with
+// the route, so there is nothing stable to key a refresh window to: their stock
+// stays random.
 function stockDetail(ingredients) {
   return "Equipment: " + chooseEquipment().join(", ") +
          "\nPotions: " + choosePotions().join(", ") +

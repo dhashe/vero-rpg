@@ -24,7 +24,8 @@
 
   <header>
     <h1>Town Events</h1>
-    <p class="subtitle">Choose a location to generate the shops trading there and the quest the guild is posting.</p>
+    <p class="subtitle">Choose a location to see the shops trading there and the quest the guild is posting.
+      Every player sees the same listings until they expire.</p>
   </header>
 
   <section class="panel">
@@ -33,7 +34,7 @@
         <label for="location">Location</label>
         <select id="location"></select>
       </div>
-      <button id="go" type="button">Generate town</button>
+      <button id="go" type="button">Show town</button>
     </div>
     <div id="stats" class="stats" hidden></div>
   </section>
@@ -50,28 +51,27 @@ const QUESTS_PER_TOWN = 1;
 const QUEST_INGREDIENTS = 2;
 const QUEST_REWARD = [25,50];
 
-// Shops stock only what the node itself offers, unlike road vending machines
-// which pool the ingredients of both endpoints of an edge.
-function ingredientsForNode(n) {
-  const pool = nodeIngredients[n] || [];
-  return pool.length ? sample(pool,3) : [];
-}
-
 function shopsForNode(n) {
-  return Array.from({length:SHOPS_PER_TOWN}, () => ({
-    type:"shop", title:"Shop", detail:stockDetail(ingredientsForNode(n))
+  return Array.from({length:SHOPS_PER_TOWN}, (_,i) => ({
+    type:"shop", title:"Shop", detail:shopStock(n,i)
   }));
 }
 
 // The guild posts board quests from the whole world: the target monster ignores
-// local terrain and the requested ingredients can come from any location.
-function questsForNode() {
-  return Array.from({length:QUESTS_PER_TOWN}, () => ({
-    type:"quest", title:"Guild Monster Quest",
-    detail:"Slay: " + randomMonster() +
-           "\nCollect: " + sampleDistinct(allIngredients,QUEST_INGREDIENTS).join(", ") +
-           "\nReward: $" + randInt(...QUEST_REWARD)
-  }));
+// local terrain and the requested ingredients can come from any location. The
+// board itself is local, so each town's postings refresh independently.
+function questsForNode(n) {
+  const period=REFRESH_DAYS.quest;
+  return Array.from({length:QUESTS_PER_TOWN}, (_,i) => {
+    const rnd=windowRandom(period,"quest",n,i);
+    return {
+      type:"quest", title:"Guild Monster Quest",
+      detail:"Slay: " + randomMonster(rnd) +
+             "\nCollect: " + sampleDistinct(allIngredients,QUEST_INGREDIENTS,rnd).join(", ") +
+             "\nReward: $" + randInt(...QUEST_REWARD,rnd) +
+             "\nExpires: " + dayLabel(windowExpiryDay(period))
+    };
+  });
 }
 
 const locationSel=document.querySelector("#location");
@@ -88,7 +88,7 @@ function eventCards(events) {
 function render() {
   const n=locationSel.value;
   const shops=shopsForNode(n);
-  const quests=questsForNode();
+  const quests=questsForNode(n);
   const poolSize=new Set(nodeIngredients[n] || []).size;
 
   const stats=document.querySelector("#stats");
@@ -108,7 +108,8 @@ function render() {
     html+=`<div class="empty">No local ingredients are gathered here.</div>`;
   }
   html+=eventCards(shops);
-  html+=`</div><div class="legend">Shops stock only ingredients found at ${escapeHtml(pretty(n))}.</div></section>`;
+  html+=`</div><div class="legend">Shops stock only ingredients found at ${escapeHtml(pretty(n))}.
+    Equipment restocks every ${REFRESH_DAYS.equipment} days, potions and ingredients every ${REFRESH_DAYS.potions}.</div></section>`;
 
   html+=`<section class="panel">
     <div class="card-head">
@@ -116,7 +117,8 @@ function render() {
       <div class="card-note">${quests.length} quest${quests.length===1?"":"s"}</div>
     </div>
     <div class="events">${eventCards(quests)}</div>
-    <div class="legend">Quest targets and ingredients are drawn from anywhere in the world.</div>
+    <div class="legend">Quest targets and ingredients are drawn from anywhere in the world.
+      The board is reposted every ${REFRESH_DAYS.quest} days.</div>
   </section>`;
 
   document.querySelector("#results").innerHTML=html;
